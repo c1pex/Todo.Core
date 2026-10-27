@@ -118,5 +118,6 @@ dotnet test Todo.Core.Tests/Todo.Core.Tests.csproj -c Release
 │   └── TodoListPersistenceTests.cs
 ├── TodoSolution.sln
 ├── README.md
-└── REPORT.md
+├── REPORT.md
+└── REPORT.docx
 ```
