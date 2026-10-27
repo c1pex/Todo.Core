@@ -1,0 +1,42 @@
+name: "Publish package to GitHub Packages"
+
+on:
+  workflow_run:
+    workflows: [ "CI / Build & Test" ]
+    types: [ completed ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Publish NuGet package
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'master' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore TodoSolution.sln
+
+      - name: Build
+        run: dotnet build TodoSolution.sln --no-restore -c Release
+
+      - name: Pack
+        run: dotnet pack Todo.Core/Todo.Core.csproj -c Release --no-build -o ./artifacts
+
+      - name: List package artifacts
+        run: ls -la ./artifacts
+
+      - name: Push package to GitHub Packages
+        run: dotnet nuget push ./artifacts/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
