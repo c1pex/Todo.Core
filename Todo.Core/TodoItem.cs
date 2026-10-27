@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Todo.Core;
 
 /// <summary>
@@ -12,10 +14,30 @@ public sealed class TodoItem
     /// <exception cref="ArgumentNullException">Название равно <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">Название пустое или состоит только из пробелов.</exception>
     public TodoItem(string title)
+        : this(Guid.NewGuid(), title, false)
     {
+    }
+
+    /// <summary>
+    /// Создаёт задачу с заданными идентификатором и состоянием.
+    /// Используется System.Text.Json при десериализации, чтобы сохранить исходный Id.
+    /// </summary>
+    /// <param name="id">Идентификатор задачи.</param>
+    /// <param name="title">Название задачи.</param>
+    /// <param name="isDone">Признак выполнения задачи.</param>
+    /// <exception cref="ArgumentException">Идентификатор пустой или название пустое.</exception>
+    /// <exception cref="ArgumentNullException">Название равно <see langword="null"/>.</exception>
+    [JsonConstructor]
+    public TodoItem(Guid id, string title, bool isDone)
+    {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("Идентификатор задачи не может быть пустым.", nameof(id));
+        }
+
+        Id = id;
         Title = NormalizeTitle(title);
-        Id = Guid.NewGuid();
-        IsDone = false;
+        IsDone = isDone;
     }
 
     /// <summary>
@@ -26,11 +48,13 @@ public sealed class TodoItem
     /// <summary>
     /// Название задачи без пробелов по краям.
     /// </summary>
+    [JsonInclude]
     public string Title { get; private set; }
 
     /// <summary>
     /// Признак того, что задача выполнена.
     /// </summary>
+    [JsonInclude]
     public bool IsDone { get; private set; }
 
     /// <summary>

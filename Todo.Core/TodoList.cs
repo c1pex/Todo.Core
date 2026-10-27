@@ -1,10 +1,17 @@
+using System.Text.Json;
+
 namespace Todo.Core;
 
 /// <summary>
-/// Коллекция задач с операциями добавления, удаления и поиска.
+/// Коллекция задач с операциями добавления, удаления, поиска и сохранения в JSON.
 /// </summary>
 public sealed class TodoList
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        WriteIndented = true
+    };
+
     private readonly List<TodoItem> _items = new();
 
     /// <summary>
@@ -65,5 +72,46 @@ public sealed class TodoList
         return _items
             .Where(item => item.Title.Contains(query, StringComparison.OrdinalIgnoreCase))
             .ToList();
+    }
+
+    /// <summary>
+    /// Сохраняет список задач в JSON-файл.
+    /// </summary>
+    /// <param name="path">Путь к файлу.</param>
+    /// <exception cref="ArgumentException">Путь пустой или состоит только из пробелов.</exception>
+    public void Save(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Путь к файлу не может быть пустым.", nameof(path));
+        }
+
+        var json = JsonSerializer.Serialize(_items, JsonOptions);
+        File.WriteAllText(path, json);
+    }
+
+    /// <summary>
+    /// Загружает задачи из JSON-файла, заменяя текущее содержимое списка.
+    /// </summary>
+    /// <param name="path">Путь к файлу.</param>
+    /// <exception cref="ArgumentException">Путь пустой или состоит только из пробелов.</exception>
+    /// <exception cref="FileNotFoundException">Файл по указанному пути не найден.</exception>
+    public void Load(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Путь к файлу не может быть пустым.", nameof(path));
+        }
+
+        if (!File.Exists(path))
+        {
+            throw new FileNotFoundException("Файл со списком задач не найден.", path);
+        }
+
+        var json = File.ReadAllText(path);
+        var loadedItems = JsonSerializer.Deserialize<List<TodoItem>>(json, JsonOptions) ?? new List<TodoItem>();
+
+        _items.Clear();
+        _items.AddRange(loadedItems);
     }
 }
